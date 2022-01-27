@@ -1,45 +1,30 @@
 import bcrypt from "bcryptjs";
-import {
-  createCookieSessionStorage,
-  redirect
-} from "remix";
-import { db } from "./db.server";
+import { createCookieSessionStorage, redirect } from "remix";
+import { GetUser, SaveUser } from "./db.server";
 
 type LoginForm = {
   username: string;
   password: string;
 };
 
-export async function register({
-  username,
-  password
-}: LoginForm) {
+export async function register({ username, password }: LoginForm) {
   const passwordHash = await bcrypt.hash(password, 10);
-  return db.user.create({
-    data: { username, passwordHash }
-  });
+  return SaveUser({ username, passwordHash });
 }
 
-export async function login({
-  username,
-  password
-}: LoginForm) {
-  const user = await db.user.findUnique({
-    where: { username }
-  });
+export async function login({ username, password }: LoginForm) {
+  const user = await GetUser(username);
   if (!user) return null;
-  const isCorrectPassword = await bcrypt.compare(
-    password,
-    user.passwordHash
-  );
+
+  const isCorrectPassword = await bcrypt.compare(password, user.passwordHash);
   if (!isCorrectPassword) return null;
   return user;
 }
 
-const sessionSecret = process.env.SESSION_SECRET;
-if (!sessionSecret) {
-  throw new Error("SESSION_SECRET must be set");
-}
+const sessionSecret = "SESSION_SECRET";
+// if (!sessionSecret) {
+//   throw new Error("SESSION_SECRET must be set");
+// }
 
 const storage = createCookieSessionStorage({
   cookie: {
@@ -47,13 +32,13 @@ const storage = createCookieSessionStorage({
     // normally you want this to be `secure: true`
     // but that doesn't work on localhost for Safari
     // https://web.dev/when-to-use-local-https/
-    secure: process.env.NODE_ENV === "production",
+    // secure: process.env.NODE_ENV === "production",
     secrets: [sessionSecret],
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
-    httpOnly: true
-  }
+    httpOnly: true,
+  },
 });
 
 export function getUserSession(request: Request) {
@@ -74,9 +59,7 @@ export async function requireUserId(
   const session = await getUserSession(request);
   const userId = session.get("userId");
   if (!userId || typeof userId !== "string") {
-    const searchParams = new URLSearchParams([
-      ["redirectTo", redirectTo]
-    ]);
+    const searchParams = new URLSearchParams([["redirectTo", redirectTo]]);
     throw redirect(`/login?${searchParams}`);
   }
   return userId;
@@ -88,36 +71,29 @@ export async function getUser(request: Request) {
     return null;
   }
 
-  try {
-    const user = await db.user.findUnique({
-      where: { id: userId }
-    });
-    return user;
-  } catch {
-    throw logout(request);
-  }
+  const user = await GetUser(userId);
+
+  return user;
 }
 
 export async function logout(request: Request) {
-  const session = await storage.getSession(
-    request.headers.get("Cookie")
-  );
+  const session = await storage.getSession(request.headers.get("Cookie"));
+  console.log("logging out")
+  const cookie = await storage.destroySession(session)
+
   return redirect("/login", {
     headers: {
-      "Set-Cookie": await storage.destroySession(session)
-    }
+      "Set-Cookie": cookie,
+    },
   });
 }
 
-export async function createUserSession(
-  userId: string,
-  redirectTo: string
-) {
+export async function createUserSession(userId: string, redirectTo: string) {
   const session = await storage.getSession();
   session.set("userId", userId);
   return redirect(redirectTo, {
     headers: {
-      "Set-Cookie": await storage.commitSession(session)
-    }
+      "Set-Cookie": await storage.commitSession(session),
+    },
   });
 }

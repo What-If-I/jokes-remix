@@ -63,9 +63,10 @@ function Document({
       <body>
         <Scripts/>
         {children}
-        {process.env.NODE_ENV === "development" ? (
-          <LiveReload />
-        ) : null}
+        <LiveReload />
+        {/* {process.env.NODE_ENV === "development" ? (
+          
+        ) : null} */}
       </body>
     </html>
   );

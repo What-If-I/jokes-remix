@@ -1,16 +1,12 @@
-import { Joke } from "@prisma/client";
-import { Link } from "react-router-dom";
-import { LoaderFunction, useLoaderData } from "remix";
-import { db } from "~/utils/db.server";
+import { LoaderFunction, useLoaderData, Link } from "remix";
+import { GetRandomJokes, Joke } from "~/utils/db.server";
 
-type LoaderData = { joke: Joke };
+type LoaderData = { joke: Joke | null };
 export const loader: LoaderFunction = async ({ params }) => {
-  const count = await db.joke.count();
-  const randomRowNumber = Math.floor(Math.random() * count);
-  const [joke] = await db.joke.findMany({
-    take: 1,
-    skip: randomRowNumber,
-  });
+  const jokes = await GetRandomJokes(10);
+  const randomJokeNumber = Math.floor(Math.random() * jokes.length);
+
+  const joke = jokes[randomJokeNumber];
 
   return { joke };
 };
@@ -21,16 +17,18 @@ export default function JokeRoute() {
   return (
     <div>
       <p>Here's a random joke:</p>
-      <p>{data.joke.content}</p>
-      <Link to={data.joke.id}>{data.joke.name} Permalink</Link>
+      {data.joke ? (
+        <div>
+          <p>{data.joke.content}</p>
+          <Link to={data.joke.id}>{data.joke.name} Permalink</Link>
+        </div>
+      ) : (
+        <p>No joke for you :(</p>
+      )}
     </div>
   );
 }
 
 export function ErrorBoundary() {
-  return (
-    <div className="error-container">
-      I did a whoopsies.
-    </div>
-  );
+  return <div className="error-container">I did a whoopsies.</div>;
 }

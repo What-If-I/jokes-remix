@@ -1,0 +1,26 @@
+name = "jokes"
+type = "javascript"
+
+zone_id = ""
+account_id = ""
+route = ""
+workers_dev = true
+compatibility_date = "2022-01-27"
+
+kv_namespaces = [
+  { binding = "CF_STORAGE", id = "2c32045b213e40209614d5d3f2488474" }
+]
+
+[site]
+bucket = "./public"
+entry-point = "."
+
+[build]
+command = "npm run build:worker"
+watch_dir = "build/index.js"
+
+[build.upload]
+format="service-worker"
+
+# [secrets]
+# SESSION_SECRET

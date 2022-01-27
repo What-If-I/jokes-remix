@@ -6,18 +6,14 @@ import {
   useCatch,
   Link,
   Form,
-  useTransition
+  useTransition,
 } from "remix";
 import { JokeDisplay } from "~/components/joke";
-import { db } from "~/utils/db.server";
-import {
-  requireUserId,
-  getUserId
-} from "~/utils/session.server";
+import { SaveJoke } from "~/utils/db.server";
 
-export const loader: LoaderFunction = async ({
-  request
-}) => {
+import { requireUserId, getUserId } from "~/utils/session.server";
+
+export const loader: LoaderFunction = async ({ request }) => {
   const userId = await getUserId(request);
   if (!userId) {
     throw new Response("Unauthorized", { status: 401 });
@@ -49,38 +45,30 @@ type ActionData = {
   };
 };
 
-const badRequest = (data: ActionData) =>
-  json(data, { status: 400 });
+const badRequest = (data: ActionData) => json(data, { status: 400 });
 
-export const action: ActionFunction = async ({
-  request
-}) => {
+export const action: ActionFunction = async ({ request }) => {
   const userId = await requireUserId(request);
   const form = await request.formData();
   const name = form.get("name");
   const content = form.get("content");
-  if (
-    typeof name !== "string" ||
-    typeof content !== "string"
-  ) {
+  if (typeof name !== "string" || typeof content !== "string") {
     return badRequest({
-      formError: `Form not submitted correctly.`
+      formError: `Form not submitted correctly.`,
     });
   }
 
   const fieldErrors = {
     name: validateJokeName(name),
-    content: validateJokeContent(content)
+    content: validateJokeContent(content),
   };
   const fields = { name, content };
   if (Object.values(fieldErrors).some(Boolean)) {
     return badRequest({ fieldErrors, fields });
   }
 
-  const joke = await db.joke.create({
-    data: { ...fields, jokesterId: userId }
-  });
-  return redirect(`/jokes/${joke.id}`);
+  const jokeID = await SaveJoke({ ...fields, userID: userId });
+  return redirect(`/jokes/${jokeID}`);
 };
 
 export default function NewJokeRoute() {
@@ -89,8 +77,7 @@ export default function NewJokeRoute() {
 
   if (transition.submission) {
     const name = transition.submission.formData.get("name");
-    const content =
-      transition.submission.formData.get("content");
+    const content = transition.submission.formData.get("content");
     if (
       typeof name === "string" &&
       typeof content === "string" &&
@@ -118,23 +105,14 @@ export default function NewJokeRoute() {
               type="text"
               defaultValue={actionData?.fields?.name}
               name="name"
-              aria-invalid={
-                Boolean(actionData?.fieldErrors?.name) ||
-                undefined
-              }
+              aria-invalid={Boolean(actionData?.fieldErrors?.name) || undefined}
               aria-describedby={
-                actionData?.fieldErrors?.name
-                  ? "name-error"
-                  : undefined
+                actionData?.fieldErrors?.name ? "name-error" : undefined
               }
             />
           </label>
           {actionData?.fieldErrors?.name ? (
-            <p
-              className="form-validation-error"
-              role="alert"
-              id="name-error"
-            >
+            <p className="form-validation-error" role="alert" id="name-error">
               {actionData.fieldErrors.name}
             </p>
           ) : null}
@@ -146,13 +124,10 @@ export default function NewJokeRoute() {
               defaultValue={actionData?.fields?.content}
               name="content"
               aria-invalid={
-                Boolean(actionData?.fieldErrors?.content) ||
-                undefined
+                Boolean(actionData?.fieldErrors?.content) || undefined
               }
               aria-describedby={
-                actionData?.fieldErrors?.content
-                  ? "content-error"
-                  : undefined
+                actionData?.fieldErrors?.content ? "content-error" : undefined
               }
             />
           </label>

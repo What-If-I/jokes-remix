@@ -1,21 +1,8 @@
-import {
-  ActionFunction,
-  Form,
-  LinksFunction,
-  MetaFunction
-} from "remix";
-import {
-  useActionData,
-  json,
-  useSearchParams,
-  Link
-} from "remix";
-import { db } from "~/utils/db.server";
-import {
-  createUserSession,
-  login,
-  register
-} from "~/utils/session.server";
+import { ActionFunction, Form, LinksFunction, MetaFunction } from "remix";
+import { useActionData, json, useSearchParams, Link } from "remix";
+import { GetUser } from "~/utils/db.server";
+
+import { createUserSession, login, register } from "~/utils/session.server";
 import stylesUrl from "../styles/login.css";
 
 export const links: LinksFunction = () => {
@@ -25,8 +12,7 @@ export const links: LinksFunction = () => {
 export const meta: MetaFunction = () => {
   return {
     title: "Remix Jokes | Login",
-    description:
-      "Login to submit your own jokes to Remix Jokes!"
+    description: "Login to submit your own jokes to Remix Jokes!",
   };
 };
 
@@ -55,12 +41,9 @@ type ActionData = {
   };
 };
 
-const badRequest = (data: ActionData) =>
-  json(data, { status: 400 });
+const badRequest = (data: ActionData) => json(data, { status: 400 });
 
-export const action: ActionFunction = async ({
-  request
-}) => {
+export const action: ActionFunction = async ({ request }) => {
   const form = await request.formData();
   const loginType = form.get("loginType");
   const username = form.get("username");
@@ -73,14 +56,14 @@ export const action: ActionFunction = async ({
     typeof redirectTo !== "string"
   ) {
     return badRequest({
-      formError: `Form not submitted correctly.`
+      formError: `Form not submitted correctly.`,
     });
   }
 
   const fields = { loginType, username, password };
   const fieldErrors = {
     username: validateUsername(username),
-    password: validatePassword(password)
+    password: validatePassword(password),
   };
   if (Object.values(fieldErrors).some(Boolean))
     return badRequest({ fieldErrors, fields });
@@ -91,34 +74,34 @@ export const action: ActionFunction = async ({
       if (!user) {
         return badRequest({
           fields,
-          formError: `Username/Password combination is incorrect`
+          formError: `Username/Password combination is incorrect`,
         });
       }
-      return createUserSession(user.id, redirectTo);
+      return createUserSession(user.username, redirectTo);
     }
     case "register": {
-      const userExists = await db.user.findFirst({
-        where: { username }
-      });
+      const userExists = await GetUser(username);
       if (userExists) {
         return badRequest({
           fields,
-          formError: `User with username ${username} already exists`
+          formError: `User with username ${username} already exists`,
         });
       }
-      const user = await register({ username, password });
-      if (!user) {
-        return badRequest({
-          fields,
-          formError: `Something went wrong trying to create a new user.`
-        });
-      }
-      return createUserSession(user.id, redirectTo);
+
+      await register({ username, password });
+      // if (!user) {
+      //   return badRequest({
+      //     fields,
+      //     formError: `Something went wrong trying to create a new user.`,
+      //   });
+      // }
+      return createUserSession(username, redirectTo);
     }
+
     default: {
       return badRequest({
         fields,
-        formError: `Login type invalid`
+        formError: `Login type invalid`,
       });
     }
   }
@@ -134,22 +117,16 @@ export default function Login() {
         <Form
           method="post"
           aria-describedby={
-            actionData?.formError
-              ? "form-error-message"
-              : undefined
+            actionData?.formError ? "form-error-message" : undefined
           }
         >
           <input
             type="hidden"
             name="redirectTo"
-            value={
-              searchParams.get("redirectTo") ?? undefined
-            }
+            value={searchParams.get("redirectTo") ?? undefined}
           />
           <fieldset>
-            <legend className="sr-only">
-              Login or Register?
-            </legend>
+            <legend className="sr-only">Login or Register?</legend>
             <label>
               <input
                 type="radio"
@@ -167,10 +144,7 @@ export default function Login() {
                 type="radio"
                 name="loginType"
                 value="register"
-                defaultChecked={
-                  actionData?.fields?.loginType ===
-                  "register"
-                }
+                defaultChecked={actionData?.fields?.loginType === "register"}
               />{" "}
               Register
             </label>
@@ -182,13 +156,9 @@ export default function Login() {
               id="username-input"
               name="username"
               defaultValue={actionData?.fields?.username}
-              aria-invalid={Boolean(
-                actionData?.fieldErrors?.username
-              )}
+              aria-invalid={Boolean(actionData?.fieldErrors?.username)}
               aria-describedby={
-                actionData?.fieldErrors?.username
-                  ? "username-error"
-                  : undefined
+                actionData?.fieldErrors?.username ? "username-error" : undefined
               }
             />
             {actionData?.fieldErrors?.username ? (
@@ -209,14 +179,10 @@ export default function Login() {
               defaultValue={actionData?.fields?.password}
               type="password"
               aria-invalid={
-                Boolean(
-                  actionData?.fieldErrors?.password
-                ) || undefined
+                Boolean(actionData?.fieldErrors?.password) || undefined
               }
               aria-describedby={
-                actionData?.fieldErrors?.password
-                  ? "password-error"
-                  : undefined
+                actionData?.fieldErrors?.password ? "password-error" : undefined
               }
             />
             {actionData?.fieldErrors?.password ? (
@@ -231,10 +197,7 @@ export default function Login() {
           </div>
           <div id="form-error-message">
             {actionData?.formError ? (
-              <p
-                className="form-validation-error"
-                role="alert"
-              >
+              <p className="form-validation-error" role="alert">
                 {actionData?.formError}
               </p>
             ) : null}

@@ -1,4 +1,3 @@
-import { User } from "@prisma/client";
 import {
   Link,
   LinksFunction,
@@ -6,7 +5,8 @@ import {
   Outlet,
   useLoaderData,
 } from "remix";
-import { db } from "~/utils/db.server";
+import { GetRandomJokes, User } from "~/utils/db.server";
+
 import { getUser } from "~/utils/session.server";
 import stylesUrl from "../styles/jokes.css";
 
@@ -25,11 +25,8 @@ type LoaderData = {
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
-  const jokeListItems = await db.joke.findMany({
-    take: 5,
-    orderBy: { createdAt: "desc" },
-    select: { id: true, name: true },
-  });
+  const jokeListItems = await GetRandomJokes(5)
+
   const user = await getUser(request);
 
   const data: LoaderData = {
@@ -41,6 +38,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function JokesRoute() {
   const data = useLoaderData<LoaderData>();
+  console.log("Render JokesRoute with data ", data);
 
   return (
     <div className="jokes-layout">

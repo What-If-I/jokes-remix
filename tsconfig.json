@@ -1,5 +1,5 @@
 {
-  "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx", "worker/index.js"],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2021"],
     "isolatedModules": true,
@@ -13,6 +13,7 @@
     "paths": {
       "~/*": ["./app/*"]
     },
+    "types": ["@cloudflare/workers-types"],
 
     // Remix takes care of building everything in `remix build`.
     "noEmit": true
