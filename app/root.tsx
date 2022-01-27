@@ -1,12 +1,5 @@
 import type { LinksFunction, MetaFunction } from "remix";
-import {
-  Links,
-  LiveReload,
-  Outlet,
-  useCatch,
-  Meta,
-  Scripts
-} from "remix";
+import { Links, LiveReload, Outlet, useCatch, Meta, Scripts } from "remix";
 
 import globalStylesUrl from "./styles/global.css";
 import globalMediumStylesUrl from "./styles/global-medium.css";
@@ -16,18 +9,18 @@ export const links: LinksFunction = () => {
   return [
     {
       rel: "stylesheet",
-      href: globalStylesUrl
+      href: globalStylesUrl,
     },
     {
       rel: "stylesheet",
       href: globalMediumStylesUrl,
-      media: "print, (min-width: 640px)"
+      media: "print, (min-width: 640px)",
     },
     {
       rel: "stylesheet",
       href: globalLargeStylesUrl,
-      media: "screen and (min-width: 1024px)"
-    }
+      media: "screen and (min-width: 1024px)",
+    },
   ];
 };
 
@@ -41,13 +34,13 @@ export const meta: MetaFunction = () => {
     "twitter:creator": "@remix_run",
     "twitter:site": "@remix_run",
     "twitter:title": "Remix Jokes",
-    "twitter:description": description
+    "twitter:description": description,
   };
 };
 
 function Document({
   children,
-  title = `Remix: So great, it's funny!`
+  title = `Remix: So great, it's funny!`,
 }: {
   children: React.ReactNode;
   title?: string;
@@ -61,12 +54,9 @@ function Document({
         <Links />
       </head>
       <body>
-        <Scripts/>
+        <Scripts />
         {children}
-        <LiveReload />
-        {/* {process.env.NODE_ENV === "development" ? (
-          
-        ) : null} */}
+        {process.env.NODE_ENV === "development" ? <LiveReload /> : null}
       </body>
     </html>
   );
@@ -84,9 +74,7 @@ export function CatchBoundary() {
   const caught = useCatch();
 
   return (
-    <Document
-      title={`${caught.status} ${caught.statusText}`}
-    >
+    <Document title={`${caught.status} ${caught.statusText}`}>
       <div className="error-container">
         <h1>
           {caught.status} {caught.statusText}
